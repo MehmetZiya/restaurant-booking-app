@@ -32,12 +32,12 @@ model Restaurant {
 model Item {
   id        Int      @id @default(autoincrement())
   name      String
-  price Int
+  price     String
   description String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  restaurantId Int
-  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  restaurant_id Int
+  restaurant Restaurant @relation(fields: [restaurant_id], references: [id])
 }
 
 model Location {
