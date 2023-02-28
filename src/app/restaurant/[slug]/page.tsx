@@ -6,6 +6,7 @@ import Reviews from './components/Reviews'
 import Title from './components/Title'
 import ReservationCard from './components/ReservationCard'
 import { PrismaClient, Review } from '@prisma/client'
+import { notFound } from 'next/navigation'
 
 interface RestaurantDetailsType {
   id: number
@@ -32,7 +33,7 @@ const fetchRestaurantBySlug = async (
       reviews: true,
     },
   })
-  if (!restaurant) throw new Error('Restaurant not found')
+  if (!restaurant) notFound()
   return restaurant
 }
 
