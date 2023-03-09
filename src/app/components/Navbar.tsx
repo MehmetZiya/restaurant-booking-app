@@ -12,18 +12,21 @@ export default function NavBar() {
   return (
     <nav className='bg-white p-2 flex justify-between'>
       <Link href='/' className='font-bold text-gray-700 text-2xl'>
-        OpenTable{' '}
+        OpenTable
       </Link>
       <div>
         {loading ? null : (
           <div className='flex'>
             {data ? (
-              <button
-                className='bg-blue-400 text-white border p-1 px-4 rounded mr-3'
-                onClick={signout}
-              >
-                Sign out
-              </button>
+              <div className='flex justify-center items-center'>
+                <p className='text-sm mr-3'>{data.firstName}</p>
+                <button
+                  className='bg-blue-400 text-white border p-1 px-4 rounded mr-3'
+                  onClick={signout}
+                >
+                  Sign out
+                </button>
+              </div>
             ) : (
               <>
                 <AuthModal isSignin={true} />
