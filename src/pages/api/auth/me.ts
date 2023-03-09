@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { PrismaClient } from '@prisma/client'
+
 import jwt from 'jsonwebtoken'
-import * as jose from 'jose'
+import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
@@ -14,10 +14,11 @@ export default async function handler(
 
   const payload = jwt.decode(token) as { email: string }
 
-  if (!payload.email)
-    return res
-      .status(401)
-      .json({ errorMessage: 'Unauthorized (Invaild Token)' })
+  if (!payload.email) {
+    return res.status(401).json({
+      errorMessage: 'Unauthorized request',
+    })
+  }
 
   const user = await prisma.user.findUnique({
     where: {
@@ -32,5 +33,18 @@ export default async function handler(
       phone: true,
     },
   })
-  return res.status(200).json({ message: 'Authorized', user })
+
+  if (!user) {
+    return res.status(401).json({
+      errorMessage: 'User not found',
+    })
+  }
+
+  return res.json({
+    id: user.id,
+    firstName: user.first_name,
+    lastName: user.last_name,
+    phone: user.phone,
+    city: user.city,
+  })
 }

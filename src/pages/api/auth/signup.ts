@@ -3,6 +3,7 @@ import validator from 'validator'
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcrypt'
 import * as jose from 'jose'
+import { setCookie } from 'cookies-next'
 
 const prisma = new PrismaClient()
 
@@ -13,14 +14,21 @@ export default async function handler(
   if (req.method === 'POST') {
     const { firstName, lastName, email, phone, city, password } = req.body
     const errors: string[] = []
+
     const validationSchema = [
       {
-        valid: validator.isLength(firstName, { min: 2, max: 15 }),
-        errorMessage: 'First name must be between 3 and 15 characters',
+        valid: validator.isLength(firstName, {
+          min: 1,
+          max: 20,
+        }),
+        errorMessage: 'First name is invalid',
       },
       {
-        valid: validator.isLength(lastName, { min: 1, max: 15 }),
-        errorMessage: 'Last name must be between 3 and 15 characters',
+        valid: validator.isLength(lastName, {
+          min: 1,
+          max: 20,
+        }),
+        errorMessage: 'First name is invalid',
       },
       {
         valid: validator.isEmail(email),
@@ -31,7 +39,7 @@ export default async function handler(
         errorMessage: 'Phone number is invalid',
       },
       {
-        valid: validator.isLength(city, { min: 2, max: 15 }),
+        valid: validator.isLength(city, { min: 1 }),
         errorMessage: 'City is invalid',
       },
       {
@@ -39,44 +47,61 @@ export default async function handler(
         errorMessage: 'Password is not strong enough',
       },
     ]
-    validationSchema.forEach((item) => {
-      if (!item.valid) {
-        errors.push(item.errorMessage)
+
+    validationSchema.forEach((check) => {
+      if (!check.valid) {
+        errors.push(check.errorMessage)
       }
     })
-    if (errors.length > 0) {
-      res.status(400).json({ errorMessage: errors[0] })
+
+    if (errors.length) {
+      return res.status(400).json({ errorMessage: errors[0] })
     }
 
-    const user = await prisma.user.findUnique({
+    const userWithEmail = await prisma.user.findUnique({
       where: {
         email,
       },
     })
-    if (user) {
+
+    if (userWithEmail) {
       return res
         .status(400)
-        .json({ errorMessage: `User with email: ${user.email} already exists` })
+        .json({ errorMessage: 'Email is associated with another account' })
     }
+
     const hashedPassword = await bcrypt.hash(password, 10)
-    const newUser = await prisma.user.create({
+
+    const user = await prisma.user.create({
       data: {
         first_name: firstName,
         last_name: lastName,
-        email,
-        phone,
-        city,
         password: hashedPassword,
+        city,
+        phone,
+        email,
       },
     })
-    const algorithm = 'HS256'
+
+    const alg = 'HS256'
+
     const secret = new TextEncoder().encode(process.env.JWT_SECRET)
-    const token = await new jose.SignJWT({ email: newUser.email })
-      .setProtectedHeader({ alg: algorithm })
+
+    const token = await new jose.SignJWT({ email: user.email })
+      .setProtectedHeader({ alg })
       .setExpirationTime('24h')
       .sign(secret)
 
-    return res.status(200).json({ token })
+    setCookie('jwt', token, { req, res, maxAge: 60 * 6 * 24 })
+
+    return res.status(200).json({
+      firstName: user.first_name,
+      lastName: user.last_name,
+      email: user.email,
+      phone: user.phone,
+      city: user.city,
+    })
   }
-  return res.status(404).json({ errorMessage: 'Unknown endpoint' })
+
+  return res.status(404).json('Unknown endpoint')
 }
