@@ -15,6 +15,8 @@ interface RestaurantDetailsType {
   images: string[]
   slug: string
   reviews: Review[]
+  open_time: string
+  close_time: string
 }
 
 const prisma = new PrismaClient()
@@ -31,6 +33,8 @@ const fetchRestaurantBySlug = async (
       images: true,
       slug: true,
       reviews: true,
+      open_time: true,
+      close_time: true,
     },
   })
   if (!restaurant) notFound()
@@ -54,7 +58,10 @@ export default async function RestaurantDetails({
         <Reviews reviews={restaurant.reviews} />
       </div>
       <div className='w-[27%] relative text-reg'>
-        <ReservationCard />
+        <ReservationCard
+          openTime={restaurant.open_time}
+          closeTime={restaurant.close_time}
+        />
       </div>
     </>
   )
